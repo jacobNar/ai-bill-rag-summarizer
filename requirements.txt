@@ -1,0 +1,11 @@
+transformers
+torch
+beautifulsoup4
+lxml
+chromadb
+langchain-ollama
+langchain-chroma
+langchain-core
+langchain-experimental
+python-dotenv
+regex
