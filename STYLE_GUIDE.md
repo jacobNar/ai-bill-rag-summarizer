@@ -657,6 +657,8 @@ design-system/
 - **Scope toggle**: Uses neutral gray colors instead of primary blue
 - **Search bar**: Properly centered with 12px top margin for alignment
 - **Logo**: Clickable "Congress Chat" title reloads home page
+- **Layout**: Flexbox with space-between - logo left-justified, theme toggle right-justified
+- **Background**: Uses surface.base to match main page background
 
 #### Chat Interface
 - **Message styling**: Matches sources box design with surface.base background and left border
@@ -664,6 +666,11 @@ design-system/
 - **Border colors**: Primary blue for user messages, info blue for assistant messages
 - **Input styling**: Removed blue focus borders, uses subtle gray border with shadow
 - **Send button**: Bottom margin for better alignment, white text in dark mode
+
+#### Bill Detail Page
+- **Background hierarchy**: Page uses surface.white, main bill section uses surface.base (lighter), summary section uses surface.alt (darker)
+- **Text contrast**: Summary and subject text uses dark colors (#111827) in dark mode for better readability against darker backgrounds
+- **Color consistency**: All text elements use hardcoded colors with explicit .dark & overrides instead of CSS variables for reliable theming
 
 ### 10.2 Glossary
 - RAG: Retrieval‑Augmented Generation (LLM answers grounded in retrieved bill chunks)

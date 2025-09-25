@@ -9,7 +9,7 @@ interface HeaderProps {
 }
 
 const HeaderContainer = styled.header`
-  background: ${tokens.colors.surface.white};
+  background: ${tokens.colors.surface.base};
   border-bottom: 1px solid ${tokens.colors.gray[200]};
   padding: ${tokens.spacing[4]} ${tokens.spacing[6]};
   position: sticky;
@@ -19,15 +19,14 @@ const HeaderContainer = styled.header`
 `;
 
 const HeaderContent = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: ${tokens.spacing[6]};
   max-width: 1200px;
   margin: 0 auto;
   
   @media (max-width: ${tokens.breakpoints.md}) {
-    grid-template-columns: auto 1fr;
     gap: ${tokens.spacing[4]};
   }
 `;
@@ -55,8 +54,7 @@ const SearchSection = styled.div`
   justify-content: center;
   gap: ${tokens.spacing[3]};
   max-width: 600px;
-  width: 100%;
-  margin: 0 auto;
+  flex: 1;
   
   @media (max-width: ${tokens.breakpoints.sm}) {
     max-width: none;
