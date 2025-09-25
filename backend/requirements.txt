@@ -1,0 +1,28 @@
+# Existing RAG dependencies
+transformers
+torch
+beautifulsoup4
+lxml
+chromadb
+langchain-ollama
+langchain-chroma
+langchain-core
+langchain-experimental
+python-dotenv
+regex
+
+# FastAPI and web server dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+python-multipart
+
+# Additional utilities
+aiofiles
+python-jose[cryptography]
+passlib[bcrypt]
+
+# Development dependencies
+pytest
+pytest-asyncio
+httpx  # for testing FastAPI
