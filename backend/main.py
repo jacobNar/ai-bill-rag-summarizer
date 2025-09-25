@@ -33,7 +33,7 @@ ollama_emb = OllamaEmbeddings(
 
 chat = ChatOllama(
     base_url="http://localhost:11434/",
-    model="llama3.2",
+    model="llama3.1:8b",  # Updated to use your installed model
     temperature=0.8,
     num_predict=2048,
 )

@@ -2,22 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { tokens } from '../../styles/tokens';
 import { Button } from '../atoms/Button';
-
-export interface Bill {
-  id: string;
-  number: string;
-  title: string;
-  chamber: 'house' | 'senate';
-  sponsor: {
-    name: string;
-    party: string;
-    state: string;
-  };
-  status: string;
-  introducedDate: string;
-  summary?: string;
-  subjects: string[];
-}
+import type { Bill } from '../../types/index';
 
 interface BillCardProps {
   bill: Bill;

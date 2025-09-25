@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ChatMessage, DocumentSource } from '../components/organisms/ChatInterface';
+import type { ChatMessage, DocumentSource } from '../types/index';
 
 interface ChatStore {
   messages: ChatMessage[];

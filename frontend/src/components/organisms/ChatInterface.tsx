@@ -2,24 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { tokens } from '../../styles/tokens';
 import { Button } from '../atoms/Button';
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  sources?: DocumentSource[];
-  isStreaming?: boolean;
-}
-
-export interface DocumentSource {
-  id: string;
-  billId: string;
-  title: string;
-  excerpt: string;
-  relevanceScore: number;
-  url: string;
-}
+import type { ChatMessage, DocumentSource } from '../../types/index';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];

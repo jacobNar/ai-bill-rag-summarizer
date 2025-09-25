@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { tokens } from '../styles/tokens';
-import { ChatInterface, ChatMessage } from '../components/organisms/ChatInterface';
+import { ChatInterface } from '../components/organisms/ChatInterface';
+import type { ChatMessage } from '../types/index';
 import { useChatStore } from '../store/chatStore';
 import { api, mockData } from '../services/api';
 

@@ -2,6 +2,11 @@
 
 A production-ready web interface for the Congressional bill RAG (Retrieval-Augmented Generation) chatbot, built with React, TypeScript, and FastAPI.
 
+## 🚀 Live Demo
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+
 ## 🏗️ Architecture
 
 ```
@@ -32,24 +37,25 @@ A production-ready web interface for the Congressional bill RAG (Retrieval-Augme
    ```bash
    # Install Ollama (https://ollama.ai)
    ollama serve
-   ollama pull llama3.2
+   
+   # Install required models (or use your existing models)
+   ollama pull llama3.1:8b  # or llama3.2 if available
    ollama pull mxbai-embed-large
    ```
 
-2. **Node.js** 18+ and **Python** 3.11+
+2. **Node.js** 18+ and **Python** 3.9+
 
 ### 1. Start the Backend
 
 ```bash
 # Install Python dependencies
 cd backend
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # Start the FastAPI server
-python main.py
+python3 main.py
 # Server runs on http://localhost:8000
+# API documentation available at http://localhost:8000/docs
 ```
 
 ### 2. Start the Frontend
@@ -93,18 +99,19 @@ The UI implements a comprehensive design system based on the included style guid
 ### Frontend
 - **React 18** - UI framework
 - **TypeScript 5** - Type safety
-- **Vite** - Build tool and dev server
+- **Vite 7** - Build tool and dev server
 - **Styled Components** - CSS-in-JS styling
 - **Zustand** - State management
-- **TanStack Query** - Server state management
-- **React Router** - Client-side routing
+- **Axios** - HTTP client
+- **React Router 6** - Client-side routing
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **Ollama** - Local LLM inference
+- **Ollama** - Local LLM inference (llama3.1:8b)
 - **ChromaDB** - Vector database
 - **LangChain** - RAG pipeline
-- **WebSockets** - Real-time communication
+- **Uvicorn** - ASGI server
+- **Transformers** - Document re-ranking
 
 ## 📱 Features
 

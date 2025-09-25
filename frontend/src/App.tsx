@@ -6,16 +6,18 @@ import { ChatPage } from './pages/ChatPage';
 
 function App() {
   return (
-    <Router>
+    <>
       <GlobalStyles />
-      <div className="App">
-        <Header />
-        <Routes>
-          <Route path="/" element={<ChatPage />} />
-          <Route path="/chat" element={<ChatPage />} />
-        </Routes>
-      </div>
-    </Router>
+      <Router>
+        <div className="App">
+          <Header />
+          <Routes>
+            <Route path="/" element={<ChatPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+          </Routes>
+        </div>
+      </Router>
+    </>
   );
 }
 
