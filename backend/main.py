@@ -11,16 +11,96 @@ from pydantic import BaseModel
 import uvicorn
 
 # Import the existing RAG functionality
-import sys
-sys.path.append('..')
-from bill_summarizer import (
-    ollama_emb,
-    chat,
-    rerank_documents_hf,
-    chunk_text_with_semantic,
-    chunk_xml_bill,
-    Chroma
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
+from langchain_experimental.text_splitter import SemanticChunker
+import re
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+from typing import List, Dict, Any
+from bs4 import BeautifulSoup
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Initialize components directly
+ollama_emb = OllamaEmbeddings(
+    model="mxbai-embed-large",
 )
+
+chat = ChatOllama(
+    base_url="http://localhost:11434/",
+    model="llama3.2",
+    temperature=0.8,
+    num_predict=2048,
+)
+
+def rerank_documents_hf(
+    query: str,
+    documents: List[Document],
+    model_name: str = "BAAI/bge-reranker-large",
+    top_k: int = 10
+) -> List[Dict[str, Any]]:
+    if not documents:
+        return []
+
+    document_texts = [doc.page_content for doc in documents]
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+    model.eval()
+
+    pairs = [[query, doc] for doc in document_texts]
+    inputs = tokenizer(pairs, padding=True, truncation=True,
+                       return_tensors="pt").to(device)
+
+    with torch.no_grad():
+        scores = model(**inputs).logits.squeeze().tolist()
+
+    scored_documents = []
+    for i, doc in enumerate(documents):
+        scored_documents.append(
+            {"context": doc.page_content, "score": scores[i], "chunk_id": doc.metadata['chunk_id']})
+
+    scored_documents.sort(key=lambda x: x["score"], reverse=True)
+    top_scored_documents = scored_documents[:top_k]
+
+    reranked_documents = [
+        next(doc for doc in documents if doc.page_content == item["context"])
+        for item in top_scored_documents
+    ]
+
+    return reranked_documents
+
+def chunk_text_with_semantic(document_path, ollama_embeddings_model):
+    documents = []
+    with open(document_path, 'r', encoding='utf-8') as file:
+        full_document_content = file.read()
+
+    text_splitter = SemanticChunker(
+        embeddings=ollama_embeddings_model,
+        breakpoint_threshold_type="percentile",
+        breakpoint_threshold_amount=95
+    )
+
+    semantically_chunked_docs = text_splitter.create_documents(
+        [full_document_content])
+
+    for i, doc in enumerate(semantically_chunked_docs):
+        doc.metadata["source"] = document_path
+        doc.metadata["chunk_id"] = i
+        documents.append(doc)
+
+    return documents
+
+def chunk_xml_bill(document_path, ollama_embeddings_model, max_chunk_size=2048):
+    # Implementation would go here
+    return []
 
 # Global variables for the RAG system
 vector_store = None
