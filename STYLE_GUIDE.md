@@ -43,26 +43,27 @@ WCAG targets: Normal text AA ≥ 4.5:1, Large text AA ≥ 3:1, AAA ≥ 7:1.
 
 #### Primary & UI Colors
 
-| Role | Name | HEX | RGB | HSL |
-|------|------|-----|-----|-----|
-| Primary | Federal Navy 700 | #153E75 | 21,62,117 | 214°, 70%, 27% |
-| Secondary | Congressional Red 700 | #7A1F1F | 122,31,31 | 0°, 59%, 30% |
-| Accent | Federal Gold 600 | #B6862C | 182,134,44 | 39°, 61%, 44% |
-| Info | Info Blue 700 | #0A4AA6 | 10,74,166 | 215°, 89%, 35% |
-| Success | Green 700 | #166534 | 22,101,52 | 143°, 64%, 24% |
-| Warning | Amber 700 | #92400E | 146,64,14 | 23°, 83%, 31% |
-| Error | Red 700 (same as Secondary) | #7A1F1F | 122,31,31 | 0°, 59%, 30% |
+| Role | Name | Light Mode HEX | Dark Mode HEX | Usage |
+|------|------|----------------|---------------|-------|
+| Primary | Federal Navy 700 | #153E75 | #6B9FFF | Main actions, links |
+| Secondary | Congressional Red 700 | #7A1F1F | #FF9B9B | Alerts, secondary actions |
+| Accent | Federal Gold 600 | #B6862C | #FFD466 | Highlights, badges |
+| Info | Info Blue 700 | #0A4AA6 | #6BB6FF | Information states |
+| Success | Green 700 | #166534 | #66D9A8 | Success states |
+| Warning | Amber 700 | #92400E | #FFD466 | Warning states |
+| Error | Red 700 | #7A1F1F | #FF9B9B | Error states |
 
 #### Neutrals & Surfaces
 
-| Role | Name | HEX | RGB | HSL |
-|------|------|-----|-----|-----|
-| Text‑Primary | Gray 900 | #101828 | 16,24,40 | 220°, 43%, 11% |
-| Text‑Secondary | Gray 700 | #344054 | 52,64,84 | 204°, 42%, 23% |
-| Surface‑Base | Gray 50 | #F9FAFB | 249,250,251 | 210°, 20%, 98% |
-| Surface‑Alt | Soft Blue 50 | #F0F4F8 | 240,244,248 | 210°, 36%, 96% |
-| Pure White | White | #FFFFFF | 255,255,255 | 0°, 0%, 100% |
-| Pure Black | Black | #000000 | 0,0,0 | 0°, 0%, 0% |
+| Role | Name | Light Mode | Dark Mode | Usage |
+|------|------|------------|-----------|-------|
+| Text‑Primary | Gray 900 | #101828 | #FFFFFF | Main text |
+| Text‑Secondary | Gray 700 | #344054 | #D1D5DB | Secondary labels |
+| Text‑Muted | Gray 500 | #667085 | #E5E7EB | Helper text, timestamps |
+| Surface‑Base | Gray 50 | #F9FAFB | #111827 | Main background |
+| Surface‑Alt | Soft Blue 50 | #F0F4F8 | #1F2937 | Card backgrounds |
+| Pure White | White | #FFFFFF | #1F2937 | Cards in dark mode |
+| Pure Black | Black | #000000 | #FFFFFF | Inverted elements |
 
 #### Contrast Matrix (color as background vs text color)
 
@@ -209,13 +210,27 @@ For every component: anatomy, states, accessibility, code, DO/DON'T.
 
 ```css
 :root {
-  /* Colors */
-  --blue-700: #153E75;
-  --blue-700-hov: #123766;
-  --info-700: #0A4AA6;
-  --gray-50: #F9FAFB;
-  --gray-700: #344054;
-  --white: #FFFFFF;
+  /* Light Theme (Default) */
+  --color-primary: #153E75;
+  --color-info: #0A4AA6;
+  --color-text-primary: #101828;
+  --color-text-secondary: #344054;
+  --color-text-muted: #667085;
+  --color-surface-base: #F9FAFB;
+  --color-surface-alt: #F0F4F8;
+  --color-surface-white: #FFFFFF;
+}
+
+.dark {
+  /* Dark Theme */
+  --color-primary: #6B9FFF;
+  --color-info: #6BB6FF;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #D1D5DB;
+  --color-text-muted: #E5E7EB;
+  --color-surface-base: #111827;
+  --color-surface-alt: #1F2937;
+  --color-surface-white: #1F2937;
 
   /* Typography */
   --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -267,8 +282,14 @@ For every component: anatomy, states, accessibility, code, DO/DON'T.
 
 #### Top Bar (Anatomy)
 ```
-[SkipLink] [Logo] [Search bills…] [Scope switch: H.R.|S.] [Theme] [Profile/Sign-in]
+[SkipLink] [Logo] [Search bills…] [Scope switch: All|H.R.|S.] [Theme]
 ```
+
+**Updates:**
+- Removed Sign-in button for cleaner interface
+- Search bar vertically aligned with 8px top margin for better visual balance
+- Scope toggle uses neutral gray colors (not primary blue) for subtle presence
+- Dark mode toggle shows moon icon (🌙) in light mode, sun icon (☀️) in dark mode
 
 #### Side Drawer (Filters)
 - Facets: Chamber, Status, Sponsor, Party, Introduced date range, Topic
@@ -618,7 +639,33 @@ design-system/
 
 ## 10. Appendix
 
-### 10.1 Glossary
+### 10.1 UI Implementation Updates
+
+#### Dark Mode
+- **Toggle**: Moon icon (🌙) in light mode, sun icon (☀️) in dark mode
+- **Colors**: High-contrast palette with brighter blues (#6B9FFF) and improved text readability
+- **Persistence**: Settings saved to localStorage and applied on page load
+- **Smooth transitions**: 250ms ease on all color changes
+
+#### Input Fields
+- **Focus state**: Removed blue outline, now subtle gray border with soft shadow
+- **Search alignment**: 8px top margin for proper vertical centering
+- **Dark mode support**: Inputs adapt to theme colors automatically
+
+#### Header Layout
+- **Simplified**: Removed Sign-in button for cleaner interface
+- **Scope toggle**: Uses neutral gray colors instead of primary blue
+- **Search bar**: Properly centered with 12px top margin for alignment
+- **Logo**: Clickable "Congress Chat" title reloads home page
+
+#### Chat Interface
+- **Message styling**: Matches sources box design with surface.base background and left border
+- **Text colors**: Secondary text in light mode, white text in dark mode
+- **Border colors**: Primary blue for user messages, info blue for assistant messages
+- **Input styling**: Removed blue focus borders, uses subtle gray border with shadow
+- **Send button**: Bottom margin for better alignment, white text in dark mode
+
+### 10.2 Glossary
 - RAG: Retrieval‑Augmented Generation (LLM answers grounded in retrieved bill chunks)
 - Bill versions: e.g., Introduced, Reported, Engrossed, Enrolled
 - Chambers: House (H.R.), Senate (S.)

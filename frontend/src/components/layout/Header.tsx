@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { tokens } from '../../styles/tokens';
 import { Input } from '../atoms/Input';
-import { Button } from '../atoms/Button';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -53,9 +52,11 @@ const LogoText = styled.h1`
 const SearchSection = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: ${tokens.spacing[3]};
   max-width: 600px;
   width: 100%;
+  margin: 0 auto;
   
   @media (max-width: ${tokens.breakpoints.sm}) {
     max-width: none;
@@ -64,9 +65,11 @@ const SearchSection = styled.div`
 
 const ScopeToggle = styled.div`
   display: flex;
+  align-items: center;
   background: ${tokens.colors.surface.alt};
   border-radius: ${tokens.radii.md};
-  padding: ${tokens.spacing[0]};
+  padding: ${tokens.spacing[1]};
+  height: fit-content;
   
   @media (max-width: ${tokens.breakpoints.sm}) {
     display: none;
@@ -74,8 +77,8 @@ const ScopeToggle = styled.div`
 `;
 
 const ScopeButton = styled.button<{ $active: boolean }>`
-  background: ${props => props.$active ? tokens.colors.primary : 'transparent'};
-  color: ${props => props.$active ? tokens.colors.surface.white : tokens.colors.text.secondary};
+  background: ${props => props.$active ? tokens.colors.gray[200] : 'transparent'};
+  color: ${props => props.$active ? tokens.colors.text.primary : tokens.colors.text.muted};
   border: none;
   padding: ${tokens.spacing[1]} ${tokens.spacing[3]};
   border-radius: ${tokens.radii.sm};
@@ -85,7 +88,7 @@ const ScopeButton = styled.button<{ $active: boolean }>`
   transition: all ${tokens.transitions.fast};
   
   &:hover {
-    background: ${props => props.$active ? tokens.colors.primary : tokens.colors.gray[100]};
+    background: ${props => props.$active ? tokens.colors.gray[200] : tokens.colors.gray[100]};
   }
   
   &:focus-visible {
@@ -131,6 +134,24 @@ const ThemeToggle = styled.button`
 export const Header: React.FC<HeaderProps> = ({ onSearch, searchValue = '' }) => {
   const [searchQuery, setSearchQuery] = useState(searchValue);
   const [activeScope, setActiveScope] = useState<'house' | 'senate' | 'all'>('all');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved) {
+      const isDark = JSON.parse(saved);
+      setIsDarkMode(isDark);
+      document.documentElement.classList.toggle('dark', isDark);
+    }
+  }, []);
+  
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('darkMode', JSON.stringify(newMode));
+    // Toggle dark class on document
+    document.documentElement.classList.toggle('dark', newMode);
+  };
   
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,22 +172,30 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, searchValue = '' }) =>
       
       <HeaderContent>
         <Logo>
-          <LogoText>
+          <LogoText 
+            as="a" 
+            href="/" 
+            onClick={() => window.location.reload()}
+            style={{ textDecoration: 'none', cursor: 'pointer' }}
+          >
             Congress Chat
           </LogoText>
         </Logo>
         
         <SearchSection>
-          <form onSubmit={handleSearchSubmit} style={{ flex: 1, display: 'flex', gap: tokens.spacing[2] }}>
-            <Input
-              type="search"
-              placeholder="Search bills, topics, or ask a question..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              fullWidth
-              aria-label="Search Congress bills"
-            />
+          <form onSubmit={handleSearchSubmit} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
+            <div style={{ flex: 1, marginBottom: 0, marginTop: '12px' }}>
+              <Input
+                type="search"
+                placeholder="Search bills, topics, or ask a question..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+                fullWidth
+                aria-label="Search Congress bills"
+                style={{ marginBottom: 0 }}
+              />
+            </div>
           </form>
           
           <ScopeToggle role="group" aria-label="Search scope">
@@ -202,13 +231,10 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, searchValue = '' }) =>
             type="button"
             aria-label="Toggle dark mode"
             title="Toggle dark mode"
+            onClick={toggleDarkMode}
           >
-            🌙
+            {isDarkMode ? '☀️' : '🌙'}
           </ThemeToggle>
-          
-          <Button variant="tertiary" size="small">
-            Sign in
-          </Button>
         </NavActions>
       </HeaderContent>
     </HeaderContainer>

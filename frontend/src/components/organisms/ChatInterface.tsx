@@ -37,14 +37,21 @@ const MessageBubble = styled.div<{ $role: 'user' | 'assistant' }>`
 `;
 
 const MessageContent = styled.div<{ $role: 'user' | 'assistant' }>`
-  background: ${props => props.$role === 'user' ? tokens.colors.primary : tokens.colors.surface.alt};
-  color: ${props => props.$role === 'user' ? tokens.colors.surface.white : tokens.colors.text.primary};
+  background: ${tokens.colors.surface.base};
+  color: ${tokens.colors.text.secondary};
   padding: ${tokens.spacing[3]} ${tokens.spacing[4]};
-  border-radius: ${tokens.radii.lg};
+  border-radius: ${tokens.radii.md};
+  border-left: 3px solid ${props => props.$role === 'user' ? tokens.colors.primary : tokens.colors.info};
   font-size: ${tokens.typography.fontSize.body};
   line-height: ${tokens.typography.lineHeight.body};
   white-space: pre-wrap;
   word-wrap: break-word;
+  font-weight: ${props => props.$role === 'user' ? tokens.typography.fontWeight.medium : tokens.typography.fontWeight.regular};
+  
+  /* White text in dark mode */
+  .dark & {
+    color: #FFFFFF;
+  }
 `;
 
 const MessageTimestamp = styled.span`
@@ -96,6 +103,10 @@ const InputForm = styled.form`
   align-items: flex-end;
 `;
 
+const SendButtonWrapper = styled.div`
+  margin-bottom: ${tokens.spacing[2]};
+`;
+
 const TextareaWrapper = styled.div`
   flex: 1;
   position: relative;
@@ -115,9 +126,9 @@ const Textarea = styled.textarea`
   transition: all ${tokens.transitions.fast};
   
   &:focus {
-    outline: 2px solid ${tokens.colors.info};
-    outline-offset: 1px;
-    border-color: ${tokens.colors.info};
+    outline: none;
+    border-color: ${tokens.colors.gray[400]};
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
   }
   
   &::placeholder {
@@ -258,14 +269,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               disabled={isLoading}
             />
           </TextareaWrapper>
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={!inputValue.trim() || isLoading}
-            loading={isLoading}
-          >
-            Send
-          </Button>
+          <SendButtonWrapper>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!inputValue.trim() || isLoading}
+              loading={isLoading}
+            >
+              Send
+            </Button>
+          </SendButtonWrapper>
         </InputForm>
       </InputContainer>
     </ChatContainer>

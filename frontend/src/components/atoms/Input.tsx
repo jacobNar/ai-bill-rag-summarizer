@@ -64,9 +64,9 @@ const StyledInput = styled.input<{ $hasLeftIcon: boolean; $hasRightIcon: boolean
   }
   
   &:focus {
-    outline: 2px solid ${tokens.colors.info};
-    outline-offset: 1px;
-    border-color: ${tokens.colors.info};
+    outline: none;
+    border-color: ${tokens.colors.gray[400]};
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
   }
   
   &:disabled {

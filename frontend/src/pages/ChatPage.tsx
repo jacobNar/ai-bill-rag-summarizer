@@ -45,7 +45,7 @@ const SourcesPanel = styled.aside<{ $isOpen: boolean }>`
 const WelcomeMessage = styled.div`
   padding: ${tokens.spacing[8]};
   text-align: center;
-  background: linear-gradient(135deg, ${tokens.colors.surface.white} 0%, ${tokens.colors.surface.alt} 100%);
+  background: ${tokens.colors.surface.base};
 `;
 
 const WelcomeTitle = styled.h2`
@@ -54,7 +54,7 @@ const WelcomeTitle = styled.h2`
 `;
 
 const WelcomeText = styled.p`
-  color: ${tokens.colors.text.secondary};
+  color: ${tokens.colors.text.muted};
   max-width: 500px;
   margin: 0 auto ${tokens.spacing[6]} auto;
   line-height: ${tokens.typography.lineHeight.bodyL};
@@ -69,20 +69,22 @@ const SampleQuestions = styled.div`
 `;
 
 const SampleQuestion = styled.button`
-  background: ${tokens.colors.surface.white};
-  border: 1px solid ${tokens.colors.gray[200]};
+  background: ${tokens.colors.surface.alt};
+  border: 1px solid ${tokens.colors.primary};
   border-radius: ${tokens.radii.lg};
   padding: ${tokens.spacing[3]} ${tokens.spacing[4]};
   text-align: left;
   font-size: ${tokens.typography.fontSize.small};
-  color: ${tokens.colors.text.primary};
+  color: ${tokens.colors.primary};
   cursor: pointer;
   transition: all ${tokens.transitions.fast};
+  text-decoration: none;
   
   &:hover {
     transform: translateY(-2px);
     box-shadow: ${tokens.shadows.e2};
-    border-color: ${tokens.colors.primary};
+    background: ${tokens.colors.surface.white};
+    color: ${tokens.colors.text.primary};
   }
   
   &:focus-visible {

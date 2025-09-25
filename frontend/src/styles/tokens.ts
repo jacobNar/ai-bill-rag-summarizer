@@ -1,40 +1,40 @@
 // Design tokens from style guide
 export const tokens = {
-  // Colors
+  // Colors (CSS custom properties for theme support)
   colors: {
-    primary: '#153E75', // Federal Navy 700
-    secondary: '#7A1F1F', // Congressional Red 700
-    accent: '#B6862C', // Federal Gold 600
-    info: '#0A4AA6', // Info Blue 700
-    success: '#166534', // Green 700
-    warning: '#92400E', // Amber 700
-    error: '#7A1F1F', // Red 700
+    primary: 'var(--color-primary, #153E75)', // Federal Navy 700
+    secondary: 'var(--color-secondary, #7A1F1F)', // Congressional Red 700
+    accent: 'var(--color-accent, #B6862C)', // Federal Gold 600
+    info: 'var(--color-info, #0A4AA6)', // Info Blue 700
+    success: 'var(--color-success, #166534)', // Green 700
+    warning: 'var(--color-warning, #92400E)', // Amber 700
+    error: 'var(--color-error, #7A1F1F)', // Red 700
     
     text: {
-      primary: '#101828', // Gray 900
-      secondary: '#344054', // Gray 700
-      muted: '#667085',
-      inverse: '#FFFFFF',
+      primary: 'var(--color-text-primary, #101828)',
+      secondary: 'var(--color-text-secondary, #344054)',
+      muted: 'var(--color-text-muted, #667085)',
+      inverse: 'var(--color-text-inverse, #FFFFFF)',
     },
     
     surface: {
-      base: '#F9FAFB', // Gray 50
-      alt: '#F0F4F8', // Soft Blue 50
-      white: '#FFFFFF',
-      black: '#000000',
+      base: 'var(--color-surface-base, #F9FAFB)',
+      alt: 'var(--color-surface-alt, #F0F4F8)',
+      white: 'var(--color-surface-white, #FFFFFF)',
+      black: 'var(--color-surface-black, #000000)',
     },
     
     gray: {
-      50: '#F9FAFB',
-      100: '#F3F4F6',
-      200: '#E5E7EB',
-      300: '#D1D5DB',
-      400: '#9CA3AF',
-      500: '#6B7280',
-      600: '#4B5563',
-      700: '#344054',
-      800: '#1F2937',
-      900: '#101828',
+      50: 'var(--color-gray-50, #F9FAFB)',
+      100: 'var(--color-gray-100, #F3F4F6)',
+      200: 'var(--color-gray-200, #E5E7EB)',
+      300: 'var(--color-gray-300, #D1D5DB)',
+      400: 'var(--color-gray-400, #9CA3AF)',
+      500: 'var(--color-gray-500, #6B7280)',
+      600: 'var(--color-gray-600, #4B5563)',
+      700: 'var(--color-gray-700, #344054)',
+      800: 'var(--color-gray-800, #1F2937)',
+      900: 'var(--color-gray-900, #101828)',
     },
   },
   

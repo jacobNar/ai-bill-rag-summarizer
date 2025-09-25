@@ -30,6 +30,11 @@ const buttonVariants = {
     &:active:not(:disabled) {
       transform: translateY(0);
     }
+    
+    /* Ensure white text in dark mode */
+    .dark & {
+      color: #FFFFFF;
+    }
   `,
   
   secondary: css`
