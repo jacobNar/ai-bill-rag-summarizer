@@ -30,7 +30,7 @@ export interface SearchFilters {
 }
 
 export interface SearchResult {
-  bills: Bill[];
+  bills: string[];
   total: number;
   page: number;
   limit: number;
@@ -68,8 +68,8 @@ export const api = {
     return response.data;
   },
   
-  async getBill(billId: string): Promise<Bill> {
-    const response = await apiClient.get(`/bills/${billId}`);
+  async getBill(collectionName: string): Promise<Bill> {
+    const response = await apiClient.get(`/bill/${collectionName}`);
     return response.data;
   },
   

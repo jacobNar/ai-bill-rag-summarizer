@@ -4,7 +4,7 @@ import { tokens } from '../styles/tokens';
 import { ChatInterface } from '../components/organisms/ChatInterface';
 import type { ChatMessage } from '../types/index';
 import { useChatStore } from '../store/chatStore';
-import { api, mockData } from '../services/api';
+import { api } from '../services/api';
 
 const PageContainer = styled.div`
   display: flex;
@@ -60,15 +60,15 @@ const WelcomeText = styled.p`
   line-height: ${tokens.typography.lineHeight.bodyL};
 `;
 
-const SampleQuestions = styled.div`
+const BillsList = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: ${tokens.spacing[3]};
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
 `;
 
-const SampleQuestion = styled.button`
+const BillItem = styled.button`
   background: ${tokens.colors.surface.alt};
   border: 1px solid ${tokens.colors.primary};
   border-radius: ${tokens.radii.lg};
@@ -78,18 +78,12 @@ const SampleQuestion = styled.button`
   color: ${tokens.colors.primary};
   cursor: pointer;
   transition: all ${tokens.transitions.fast};
-  text-decoration: none;
   
   &:hover {
     transform: translateY(-2px);
     box-shadow: ${tokens.shadows.e2};
     background: ${tokens.colors.surface.white};
     color: ${tokens.colors.text.primary};
-  }
-  
-  &:focus-visible {
-    outline: 2px solid ${tokens.colors.info};
-    outline-offset: 2px;
   }
 `;
 
@@ -103,105 +97,74 @@ export const ChatPage: React.FC = () => {
     currentSessionId,
     generateSessionId,
   } = useChatStore();
-  
+
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  
+  const [bills, setBills] = useState<string[]>([]);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+
   useEffect(() => {
     // Generate session ID on mount if not exists
     if (!currentSessionId) {
       generateSessionId();
     }
   }, [currentSessionId, generateSessionId]);
-  
-  // Simulate streaming chat responses
-  const simulateStreamingResponse = async (userMessage: string): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    
+
+  useEffect(() => {
+    const fetchBills = async () => {
+      try {
+        const response = await api.searchBills();
+        setBills(response.bills);
+      } catch (error) {
+        console.error('Failed to fetch bills:', error);
+      }
+    };
+
+    fetchBills();
+  }, []);
+
+  const handleBillSelect = async (billName: string) => {
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Mock response based on question
-      let response = 'I understand you\'re asking about Congress legislation. ';
-      let sources = [];
-      
-      if (userMessage.toLowerCase().includes('infrastructure')) {
-        response = 'The Infrastructure Investment and Jobs Act (H.R. 1234) is a comprehensive piece of legislation that invests in America\'s infrastructure. Key highlights include:\n\n• $550 billion in new federal investment over 5 years\n• Road and bridge repairs and improvements\n• Broadband expansion to underserved communities\n• Clean energy infrastructure development\n• Public transit system enhancements\n\nThis bill has passed the House and is currently being considered in the Senate.';
-        sources = [mockData.bills[0]];
-      } else if (userMessage.toLowerCase().includes('energy')) {
-        response = 'The Clean Energy Innovation Act (S. 5678) focuses on promoting research and development in clean energy technologies. The bill includes provisions for:\n\n• Increased funding for renewable energy research\n• Tax incentives for clean energy adoption\n• Support for energy storage technologies\n• Grid modernization initiatives\n\nThis Senate bill is currently in committee review.';
-        sources = [mockData.bills[1]];
-      } else {
-        response += 'I can help you understand bills, their status, sponsors, and key provisions. You can ask me about specific legislation, policy topics, or search for bills by subject matter.';
-      }
-      
-      // Add streaming message
-      const assistantMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+      setLoading(true);
+      const bill = await api.getBill(billName);
+      setSelectedBill(bill);
+
+      // Add system message to chat
+      addMessage({
         role: 'assistant',
-        content: '',
-        sources: sources.map(bill => ({
-          id: `src-${bill.id}`,
-          billId: bill.id,
-          title: `${bill.chamber === 'house' ? 'H.R.' : 'S.'} ${bill.number} - ${bill.title}`,
-          excerpt: bill.summary || 'Bill summary not available.',
-          relevanceScore: 0.9,
-          url: `/bills/${bill.id}`,
-        })),
-        isStreaming: true,
-      };
-      
-      addMessage(assistantMessage);
-      
-      // Simulate streaming by updating content character by character
-      let currentContent = '';
-      const words = response.split(' ');
-      
-      for (let i = 0; i < words.length; i++) {
-        currentContent += (i > 0 ? ' ' : '') + words[i];
-        
-        // Update the last message with new content
-        const lastMessage = useChatStore.getState().messages[useChatStore.getState().messages.length - 1];
-        if (lastMessage) {
-          useChatStore.getState().updateMessage(lastMessage.id, {
-            content: currentContent,
-            isStreaming: i < words.length - 1,
-          });
-        }
-        
-        // Simulate typing delay
-        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
-      }
-      
+        content: `I'm ready to answer questions about ${bill.title}. What would you like to know?`,
+      });
+
     } catch (error) {
-      setError('Failed to get response. Please try again.');
+      console.error('Failed to load bill:', error);
+      setError('Failed to load bill information');
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleSendMessage = async (message: string) => {
-    // Add user message
     addMessage({
       role: 'user',
       content: message,
     });
-    
-    // Simulate assistant response
-    await simulateStreamingResponse(message);
+
+    try {
+      const response = await api.sendChatMessage({
+        message,
+        sessionId: currentSessionId || '',
+        context: selectedBill ? [selectedBill.id] : undefined,
+      });
+
+      addMessage({
+        role: 'assistant',
+        content: response.content,
+        sources: response.sources,
+      });
+    } catch (error) {
+      setError('Failed to get response. Please try again.');
+    }
   };
-  
-  const handleSampleQuestion = (question: string) => {
-    handleSendMessage(question);
-  };
-  
-  const sampleQuestions = [
-    'What is the Infrastructure Investment and Jobs Act?',
-    'Show me recent energy bills',
-    'What bills has Congress passed this year?',
-    'How does the legislative process work?',
-  ];
-  
+
   return (
     <PageContainer>
       <MainContent id="main" role="main">
@@ -210,20 +173,20 @@ export const ChatPage: React.FC = () => {
             <WelcomeMessage>
               <WelcomeTitle>Welcome to Congress Chat</WelcomeTitle>
               <WelcomeText>
-                I'm here to help you understand U.S. Congressional legislation. Ask me about specific bills, 
-                search by topic, or get explanations about the legislative process.
+                I'm here to help you understand U.S. Congressional legislation.
+                Select a bill below to get started.
               </WelcomeText>
-              <SampleQuestions>
-                {sampleQuestions.map((question, index) => (
-                  <SampleQuestion
+              <BillsList>
+                {bills.map((bill, index) => (
+                  <BillItem
                     key={index}
-                    onClick={() => handleSampleQuestion(question)}
+                    onClick={() => handleBillSelect(bill)}
                     type="button"
                   >
-                    {question}
-                  </SampleQuestion>
+                    {bill}
+                  </BillItem>
                 ))}
-              </SampleQuestions>
+              </BillsList>
             </WelcomeMessage>
           ) : (
             <ChatInterface
@@ -233,7 +196,7 @@ export const ChatPage: React.FC = () => {
             />
           )}
         </ChatSection>
-        
+
         <SourcesPanel $isOpen={sourcesOpen}>
           {/* Sources panel content would go here */}
         </SourcesPanel>

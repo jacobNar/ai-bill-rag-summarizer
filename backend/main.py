@@ -33,10 +33,11 @@ ollama_emb = OllamaEmbeddings(
 
 chat = ChatOllama(
     base_url="http://localhost:11434/",
-    model="llama3.1:8b",  # Updated to use your installed model
+    model="llama3.2",  # Updated to use your installed model
     temperature=0.8,
     num_predict=2048,
 )
+
 
 def rerank_documents_hf(
     query: str,
@@ -77,6 +78,7 @@ def rerank_documents_hf(
 
     return reranked_documents
 
+
 def chunk_text_with_semantic(document_path, ollama_embeddings_model):
     documents = []
     with open(document_path, 'r', encoding='utf-8') as file:
@@ -98,33 +100,70 @@ def chunk_text_with_semantic(document_path, ollama_embeddings_model):
 
     return documents
 
-def chunk_xml_bill(document_path, ollama_embeddings_model, max_chunk_size=2048):
-    # Implementation would go here
-    return []
 
 # Global variables for the RAG system
-vector_store = None
+db = None
+collection = None
+documents = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and cleanup the RAG system"""
-    global vector_store
-    
+    global db
+    global collection
+    global documents
+    print("initializing...")
     # Initialize Chroma vector store on startup
     try:
-        vector_store = Chroma(
+        # Loop through files in text-docs and create a separate collection for each
+        text_docs_dir = os.path.join('.', 'text-docs')
+        if os.path.exists(text_docs_dir):
+            for fname in os.listdir(text_docs_dir):
+                print(f"Processing file: {fname}")
+                fpath = os.path.join(text_docs_dir, fname)
+                if not os.path.isfile(fpath):
+                    continue
+
+                try:
+                    collection_name = os.path.splitext(fname)[0]
+                    # Create a new collection for each file
+                    db = Chroma(
+                        collection_name=collection_name,
+                        persist_directory="./chroma_db",
+                        embedding_function=ollama_emb
+                    )
+
+                    # Only add documents if collection is empty
+                    if db._collection.count() == 0:
+                        docs = chunk_text_with_semantic(fpath, ollama_emb)
+                        if docs:
+                            db.add_documents(docs)
+                            print(
+                                f"Created collection '{collection_name}' with {len(docs)} docs")
+                    else:
+                        print(f"Collection '{collection_name}' already exists")
+
+                except Exception as fe:
+                    print(f"Failed to process {fpath}: {fe}")
+
+        print("✅ Vector store initialized successfully with per-file collections")
+        # Set the default collection to the first one for compatibility
+        db = Chroma(
             persist_directory="./chroma_db",
             embedding_function=ollama_emb
         )
-        print("✅ Vector store initialized successfully")
+        collection = db.get()
+        documents = collection["documents"]
+
     except Exception as e:
         print(f"❌ Failed to initialize vector store: {e}")
-        vector_store = None
-    
+        db = None
+
     yield
-    
+
     # Cleanup on shutdown
-    if vector_store:
+    if db:
         print("🧹 Cleaning up vector store...")
 
 app = FastAPI(
@@ -137,13 +176,16 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite dev server
+    allow_origins=["http://localhost:5173",
+                   "http://localhost:3000"],  # Vite dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Pydantic models
+
+
 class Bill(BaseModel):
     id: str
     number: str
@@ -155,6 +197,7 @@ class Bill(BaseModel):
     summary: Optional[str] = None
     subjects: List[str]
 
+
 class DocumentSource(BaseModel):
     id: str
     billId: str
@@ -163,6 +206,7 @@ class DocumentSource(BaseModel):
     relevanceScore: float
     url: str
 
+
 class ChatMessage(BaseModel):
     id: str
     role: str
@@ -170,16 +214,19 @@ class ChatMessage(BaseModel):
     timestamp: str
     sources: Optional[List[DocumentSource]] = None
 
+
 class ChatRequest(BaseModel):
     message: str
     sessionId: str
     context: Optional[List[str]] = None
+
 
 class ChatResponse(BaseModel):
     messageId: str
     content: str
     sources: Optional[List[DocumentSource]] = None
     metadata: Optional[Dict[str, Any]] = None
+
 
 class SearchFilters(BaseModel):
     chamber: Optional[str] = None
@@ -189,39 +236,16 @@ class SearchFilters(BaseModel):
     dateTo: Optional[str] = None
     subjects: Optional[List[str]] = None
 
+
 class SearchResult(BaseModel):
-    bills: List[Bill]
+    bills: List[str]
     total: int
     page: int
     limit: int
 
-# Mock data (in production, this would come from a real database)
-MOCK_BILLS = [
-    Bill(
-        id="1",
-        number="1234",
-        title="Infrastructure Investment and Jobs Act",
-        chamber="house",
-        sponsor={"name": "Rep. John Doe", "party": "D", "state": "CA"},
-        status="Passed House",
-        introducedDate="2024-02-15",
-        summary="A comprehensive infrastructure bill investing in roads, bridges, and broadband.",
-        subjects=["Transportation", "Infrastructure", "Economic Development"]
-    ),
-    Bill(
-        id="2",
-        number="5678",
-        title="Clean Energy Innovation Act",
-        chamber="senate",
-        sponsor={"name": "Sen. Jane Smith", "party": "R", "state": "TX"},
-        status="In Committee",
-        introducedDate="2024-01-10",
-        summary="Promoting clean energy research and development initiatives.",
-        subjects=["Energy", "Environment", "Technology"]
-    )
-]
-
 # WebSocket connection manager
+
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
@@ -238,20 +262,25 @@ class ConnectionManager:
         if session_id in self.active_connections:
             await self.active_connections[session_id].send_text(message)
 
+
 manager = ConnectionManager()
 
 # API Routes
+
+
 @app.get("/")
 async def root():
     return {"message": "Congress Chat API", "status": "running"}
+
 
 @app.get("/api/v1/health")
 async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "vector_store": "connected" if vector_store else "disconnected"
+        "db": "connected" if db else "disconnected"
     }
+
 
 @app.get("/api/v1/bills", response_model=SearchResult)
 async def search_bills(
@@ -259,79 +288,145 @@ async def search_bills(
     chamber: Optional[str] = None,
     status: Optional[str] = None,
     page: int = 1,
-    limit: int = 20
+    limit: int = 100
 ):
     """Search and filter bills"""
-    filtered_bills = MOCK_BILLS.copy()
-    
-    if q:
-        filtered_bills = [
-            bill for bill in filtered_bills
-            if q.lower() in bill.title.lower() or 
-               q.lower() in bill.number.lower() or
-               any(q.lower() in subject.lower() for subject in bill.subjects)
-        ]
-    
-    if chamber:
-        filtered_bills = [bill for bill in filtered_bills if bill.chamber == chamber]
-    
-    if status:
-        filtered_bills = [bill for bill in filtered_bills if status.lower() in bill.status.lower()]
-    
-    # Pagination
-    start = (page - 1) * limit
-    end = start + limit
-    paginated_bills = filtered_bills[start:end]
-    
-    return SearchResult(
-        bills=paginated_bills,
-        total=len(filtered_bills),
-        page=page,
-        limit=limit
-    )
+    try:
+        collections = db._client.list_collections()
+        collection_names = [col.name for col in collections]
+        print(collections)
+        return SearchResult(
+            bills=collection_names,
+            total=len(collection_names),
+            page=page,
+            limit=limit
+        )
+    except Exception as e:
+        logging.error(f"Error in search_bills: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/v1/bills/{bill_id}", response_model=Bill)
-async def get_bill(bill_id: str):
-    """Get a specific bill by ID"""
-    bill = next((b for b in MOCK_BILLS if b.id == bill_id), None)
-    if not bill:
-        raise HTTPException(status_code=404, detail="Bill not found")
-    return bill
+
+@app.get("/api/v1/bill/{collection_name}", response_model=Bill)
+async def get_bill(collection_name: str):
+    """Get a specific collection by name and set it as active"""
+    global db, collection
+    try:
+        # Create Chroma instance for the specified collection
+        db = Chroma(
+            collection_name=collection_name,
+            persist_directory="./chroma_db",
+            embedding_function=ollama_emb
+        )
+        # Update the collection after switching db
+        collection = db.get()
+
+        return Bill(
+            id=collection_name,
+            number=collection_name,
+            title=f"Bill {collection_name}",
+            chamber="unknown",
+            sponsor={"name": "unknown", "id": "unknown"},
+            status="unknown",
+            introducedDate="unknown",
+            summary="No summary available.",
+            subjects=[]
+        )
+
+    except Exception as e:
+        logging.error(f"Error getting collection {collection_name}: {e}")
+        raise HTTPException(
+            status_code=404, detail=f"Collection not found: {str(e)}")
+
 
 @app.post("/api/v1/chat/message", response_model=ChatResponse)
 async def send_chat_message(request: ChatRequest):
     """Process a chat message using the RAG system"""
-    if not vector_store:
+    global db, collection
+
+    if not db:
         raise HTTPException(status_code=503, detail="RAG system not available")
-    
+
+    if not collection:
+        collection = db.get()  # Ensure collection is set
+        if not collection:
+            raise HTTPException(
+                status_code=400, detail="No collection loaded. Please select a document first.")
+
     try:
         # Extract keywords from the query using the LLM
         keyword_prompt = f"""Extract 2-3 key search terms from this question about US Congress bills: "{request.message}"
         Return only the keywords separated by spaces, no extra text."""
-        
+
         keyword_response = await asyncio.get_event_loop().run_in_executor(
             None, chat.invoke, keyword_prompt
         )
         keywords = keyword_response.content.strip()
-        
+        keyword_results = []
+
+        # Ensure 'documents' and 'metadatas' keys exist
+        if 'documents' in collection and 'metadatas' in collection:
+            documents_content = collection['documents']
+            documents_metadata = collection['metadatas']
+
+            # Iterate through the documents and their metadata
+            for i, doc_content in enumerate(documents_content):
+                if any(re.search(rf"\b{re.escape(kw)}\b", doc_content, re.IGNORECASE) for kw in keywords):
+                    # Create a Document object with content and metadata
+                    doc = Document(page_content=doc_content,
+                                   metadata=documents_metadata[i])
+                    keyword_results.append(doc)
+        else:
+            print("Error: 'documents' or 'metadatas' key missing in Chroma DB retrieval.")
+
         # Perform similarity search
-        docs = await asyncio.get_event_loop().run_in_executor(
-            None, vector_store.similarity_search, request.message, 10
+        search_results = await asyncio.get_event_loop().run_in_executor(
+            None, db.similarity_search, request.message, 10
         )
-        
-        # Re-rank documents if available
-        if docs:
-            try:
-                reranked_docs = await asyncio.get_event_loop().run_in_executor(
-                    None, rerank_documents_hf, request.message, docs, "BAAI/bge-reranker-large", 5
-                )
-                docs = reranked_docs if reranked_docs else docs
-            except Exception as e:
-                print(f"Re-ranking failed, using original docs: {e}")
-        
-        # Prepare context from retrieved documents
-        context = "\n\n".join([doc.page_content for doc in docs[:3]])
-        
+
+        combined_results = search_results + keyword_results
+
+        seen = set()
+        unique_results = []
+        for doc in combined_results:
+            identifier = doc.page_content  # or use another unique field if available
+            if identifier not in seen:
+                unique_results.append(doc)
+                seen.add(identifier)
+
+        reranked_docs = await asyncio.get_event_loop().run_in_executor(
+            None, rerank_documents_hf, request.message, unique_results, "BAAI/bge-reranker-large", 10
+        )
+
+        top_k_results_with_siblings = reranked_docs[:3]
+
+        final_context = []
+        for i, result in enumerate(top_k_results_with_siblings):
+            current_chunk_id = result.metadata['chunk_id']
+            previous_chunk_id = current_chunk_id - 1
+            next_chunk_id = current_chunk_id + 1
+            print(
+                f"Processing Result {i} with chunk_id: {current_chunk_id}, previous_chunk_id: {previous_chunk_id}, next_chunk_id: {next_chunk_id}")
+            # Fetch the previous, current, and next chunks
+            previous_chunks = db.get(where={"chunk_id": previous_chunk_id})[
+                'documents']
+            current_chunks = db.get(where={"chunk_id": current_chunk_id})[
+                'documents']
+            next_chunks = db.get(where={"chunk_id": next_chunk_id})[
+                'documents']
+            # print(previous_chunks[0], current_chunks[0], next_chunks[0])
+
+            # Add the chunks to final_context in order
+            if previous_chunks:
+                final_context.extend(previous_chunks)
+            if current_chunks:
+                final_context.extend(current_chunks)
+            if next_chunks:
+                final_context.extend(next_chunks)
+
+        context = ""
+        for i, result in enumerate(final_context, 0):
+            context += f"Result {i}\n{result}\n\n"
+
         # Generate response using the LLM
         prompt = f"""You are a helpful assistant specialized in US Congressional legislation. 
         Based on the following context from bills and documents, answer the user's question accurately and concisely.
@@ -342,27 +437,15 @@ async def send_chat_message(request: ChatRequest):
         User Question: {request.message}
         
         Provide a clear, informative answer. If the context doesn't contain relevant information, say so and provide general guidance."""
-        
+
         response = await asyncio.get_event_loop().run_in_executor(
             None, chat.invoke, prompt
         )
-        
-        # Create mock sources from retrieved documents
-        sources = []
-        for i, doc in enumerate(docs[:3]):
-            sources.append(DocumentSource(
-                id=f"src-{uuid.uuid4()}",
-                billId=doc.metadata.get('source', 'unknown'),
-                title=f"Document {i+1}: {doc.metadata.get('source', 'Unknown Source')}",
-                excerpt=doc.page_content[:200] + "...",
-                relevanceScore=0.9 - (i * 0.1),
-                url=f"/documents/{doc.metadata.get('chunk_id', i)}"
-            ))
-        
+
         return ChatResponse(
             messageId=str(uuid.uuid4()),
             content=response.content,
-            sources=sources,
+            sources=None,
             metadata={
                 "model": "llama3.2",
                 "tokens": len(response.content.split()),
@@ -370,10 +453,12 @@ async def send_chat_message(request: ChatRequest):
                 "keywords": keywords
             }
         )
-        
+
     except Exception as e:
         print(f"Chat error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to process message: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to process message: {str(e)}")
+
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
@@ -387,15 +472,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     except WebSocketDisconnect:
         manager.disconnect(session_id)
 
-@app.post("/api/v1/search", response_model=SearchResult)
-async def perform_search(query: str, filters: Optional[SearchFilters] = None):
-    """Advanced search with filters"""
-    # For now, redirect to bills search
-    return await search_bills(
-        q=query,
-        chamber=filters.chamber if filters else None,
-        status=filters.status if filters else None
-    )
+
+# @app.post("/api/v1/search", response_model=SearchResult)
+# async def perform_search(query: str, filters: Optional[SearchFilters] = None):
+#     """Advanced search with filters"""
+#     # For now, redirect to bills search
+#     return await search_bills(
+#         q=query,
+#         chamber=filters.chamber if filters else None,
+#         status=filters.status if filters else None
+#     )
 
 if __name__ == "__main__":
     uvicorn.run(
