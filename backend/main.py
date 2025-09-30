@@ -33,9 +33,9 @@ ollama_emb = OllamaEmbeddings(
 
 chat = ChatOllama(
     base_url="http://localhost:11434/",
-    model="llama3.2",  # Updated to use your installed model
-    temperature=0.8,
+    model="llama3.1:8b",
     num_predict=2048,
+    num_ctx=16384,
 )
 
 
@@ -351,7 +351,6 @@ async def send_chat_message(request: ChatRequest):
         if not collection:
             raise HTTPException(
                 status_code=400, detail="No collection loaded. Please select a document first.")
-
     try:
         # Extract keywords from the query using the LLM
         keyword_prompt = f"""Extract 2-3 key search terms from this question about US Congress bills: "{request.message}"
@@ -362,6 +361,8 @@ async def send_chat_message(request: ChatRequest):
         )
         keywords = keyword_response.content.strip()
         keyword_results = []
+
+        print(f"Extracted keywords: {keywords}")
 
         # Ensure 'documents' and 'metadatas' keys exist
         if 'documents' in collection and 'metadatas' in collection:
@@ -383,7 +384,7 @@ async def send_chat_message(request: ChatRequest):
             None, db.similarity_search, request.message, 10
         )
 
-        combined_results = search_results + keyword_results
+        combined_results = search_results + keyword_results[0:10]
 
         seen = set()
         unique_results = []
@@ -397,7 +398,7 @@ async def send_chat_message(request: ChatRequest):
             None, rerank_documents_hf, request.message, unique_results, "BAAI/bge-reranker-large", 10
         )
 
-        top_k_results_with_siblings = reranked_docs[:3]
+        top_k_results_with_siblings = reranked_docs[:6]
 
         final_context = []
         for i, result in enumerate(top_k_results_with_siblings):
@@ -407,21 +408,21 @@ async def send_chat_message(request: ChatRequest):
             print(
                 f"Processing Result {i} with chunk_id: {current_chunk_id}, previous_chunk_id: {previous_chunk_id}, next_chunk_id: {next_chunk_id}")
             # Fetch the previous, current, and next chunks
-            previous_chunks = db.get(where={"chunk_id": previous_chunk_id})[
-                'documents']
+            # previous_chunks = db.get(where={"chunk_id": previous_chunk_id})[
+            #     'documents']
             current_chunks = db.get(where={"chunk_id": current_chunk_id})[
                 'documents']
-            next_chunks = db.get(where={"chunk_id": next_chunk_id})[
-                'documents']
+            # next_chunks = db.get(where={"chunk_id": next_chunk_id})[
+            #     'documents']
             # print(previous_chunks[0], current_chunks[0], next_chunks[0])
 
             # Add the chunks to final_context in order
-            if previous_chunks:
-                final_context.extend(previous_chunks)
+            # if previous_chunks:
+            #     final_context.extend(previous_chunks)
             if current_chunks:
                 final_context.extend(current_chunks)
-            if next_chunks:
-                final_context.extend(next_chunks)
+            # if next_chunks:
+            #     final_context.extend(next_chunks)
 
         context = ""
         for i, result in enumerate(final_context, 0):
@@ -447,7 +448,7 @@ async def send_chat_message(request: ChatRequest):
             content=response.content,
             sources=None,
             metadata={
-                "model": "llama3.2",
+                "model": "llama3.1:8b",
                 "tokens": len(response.content.split()),
                 "latencyMs": 1000,
                 "keywords": keywords
