@@ -398,7 +398,7 @@ async def send_chat_message(request: ChatRequest):
             None, rerank_documents_hf, request.message, unique_results, "BAAI/bge-reranker-large", 10
         )
 
-        top_k_results_with_siblings = reranked_docs[:6]
+        top_k_results_with_siblings = reranked_docs[0:6]
 
         final_context = []
         for i, result in enumerate(top_k_results_with_siblings):
